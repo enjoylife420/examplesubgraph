@@ -1,6 +1,6 @@
 /* eslint-disable prefer-const */
 import { BigInt, BigDecimal, ethereum } from '@graphprotocol/graph-ts'
-import { Transaction } from '../../generated/schema'
+import { Transaction, WeightBalanceData, Pool } from '../../generated/schema'
 import { ONE_BI, ZERO_BI, ZERO_BD, ONE_BD } from '../utils/constants'
 import { Swap as SwapEvent } from '../../generated/Router/Router'
 
@@ -86,6 +86,9 @@ export function loadTransactionFromEvent(_transaction: ethereum.Transaction, blo
   transaction.blockNumber = block.number
   transaction.timestamp = block.timestamp
   transaction.gasPrice = _transaction.gasPrice
+  transaction.joins = []
+  transaction.exits = []
+  transaction.swaps = []
   transaction.save()
   return transaction as Transaction
 }
@@ -100,4 +103,22 @@ export function loadTransaction(call: ethereum.Call): Transaction {
   transaction.gasPrice = call.transaction.gasPrice
   transaction.save()
   return transaction as Transaction
+}
+
+export function loadWeightBalanceData(id: string, pool: Pool, event: ethereum.Event): WeightBalanceData {
+  let weightBalanceData = WeightBalanceData.load(id)
+  if (weightBalanceData === null) {
+    weightBalanceData = new WeightBalanceData(id)
+    weightBalanceData.pool = pool.id
+    weightBalanceData.token0 = pool.token0
+    weightBalanceData.token1 = pool.token1
+    weightBalanceData.transaction = event.transaction.hash
+    weightBalanceData.timestamp = event.block.timestamp
+    weightBalanceData.weight0 = ZERO_BD
+    weightBalanceData.weight1 = ZERO_BD
+    weightBalanceData.balance0 = ZERO_BD
+    weightBalanceData.balance1 = ZERO_BD
+    weightBalanceData.save()
+  }
+  return weightBalanceData
 }

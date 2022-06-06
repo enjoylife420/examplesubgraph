@@ -85,19 +85,19 @@ export function getTokenPrices(poolAddress: Address, token0: Token, token1: Toke
   return [price0, price1]
 }
 
-export function getTokenPrice(token: Token): BigDecimal {
-  let bundle = Bundle.load('1')
-  if (bundle === null) {
-    log.error('bundle is not existed', [])
-    return ZERO_BD
-  }
-  if (token.id == USDC_ADDRESS) {
-    return ONE_BD
-  }
-  return token.derivedETH.times(bundle.ethPriceUSD)
-}
+// export function getTokenPrice(token: Token): BigDecimal {
+//   let bundle = Bundle.load('1')
+//   if (bundle === null) {
+//     log.error('bundle is not existed', [])
+//     return ZERO_BD
+//   }
+//   if (token.id == USDC_ADDRESS) {
+//     return ONE_BD
+//   }
+//   return token.derivedETH.times(bundle.ethPriceUSD)
+// }
 
-export function getTokenRatio(poolAddress: Address, token0: Token, token1: Token): BigDecimal {
+export function getToken0Price(poolAddress: Address, token0: Token, token1: Token): BigDecimal {
   let poolContract = PoolABI.bind(poolAddress);
 
   let poolWeights = poolContract.getWeights()
@@ -168,7 +168,7 @@ export function findEthPerToken(token: Token): BigDecimal {
         if (ethLocked.gt(largestLiquidityETH)) {
           largestLiquidityETH = ethLocked
           // token1 per our token * Eth per token1
-          priceSoFar = token1DerivedETH.times(pool.ratio)
+          priceSoFar = token1DerivedETH.times(pool.token0Price)
         }
       }
       if (pool.token1 == token.id) {
@@ -186,7 +186,7 @@ export function findEthPerToken(token: Token): BigDecimal {
         if (ethLocked.gt(largestLiquidityETH)) {
           largestLiquidityETH = ethLocked
           // token0 per our token * ETH per token0
-          priceSoFar = token0DerivedETH.div(pool.ratio)
+          priceSoFar = token0DerivedETH.times(pool.token1Price)
         }
       }
     }
