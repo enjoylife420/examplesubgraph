@@ -1,7 +1,7 @@
 {
   "name": "example",
   "version": "0.1.0",
-  "repository": "https://github.com/graphprotocol/example-subgraph",
+  "repository": "https://github.com/enjoylife420/examplesubgraph",
   "license": "MIT",
   "scripts": {
     "build-contract": "solc contracts/Gravity.sol --abi -o abis --overwrite && solc contracts/Gravity.sol --bin -o bin --overwrite",
@@ -9,7 +9,7 @@
     "create-local": "graph create example --node http://127.0.0.1:8020",
     "codegen": "graph codegen",
     "build": "graph build",
-    "deploy": "graph deploy enjoylife420/examplesubgraph --ipfs https://api.thegraph.com/ipfs/ --node https://api.thegraph.com/deploy/",
+    "deploy": "graph deploy enjoylife420/ropsten-project --ipfs https://api.thegraph.com/ipfs/ --node https://api.thegraph.com/deploy/",
     "deploy-local": "graph deploy example --ipfs http://127.0.0.1:5001 --node http://127.0.0.1:8020"
   },
   "devDependencies": {
