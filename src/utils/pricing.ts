@@ -139,6 +139,16 @@ export function findEthPerToken(token: Token): BigDecimal {
   if (token.id == TETH_ADDRESS) {
     return ONE_BD
   }
+  if (token.id == USDC_ADDRESS) {
+    let bundle = Bundle.load('1')
+    if (bundle === null) {
+      return ZERO_BD
+    }
+    if (bundle.ethPriceUSD == ZERO_BD) {
+      return ZERO_BD
+    }
+    return ONE_BD.div(bundle.ethPriceUSD)
+  }
   let whiteList = token.whitelistPools
   // for now just take USD from pool with greatest TVL
   // need to update this to actually detect best rate based on liquidity distribution
