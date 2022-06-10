@@ -113,10 +113,6 @@ export function handleSwapEvent(event: SwapEvent): void {
   pool.feesUSD = pool.feesUSD.plus(feesUSD)
   pool.txCount = pool.txCount.plus(ONE_BI)
 
-  // Update the pool.
-  pool.totalValueLockedToken0 = pool.totalValueLockedToken0.plus(amount0)
-  pool.totalValueLockedToken1 = pool.totalValueLockedToken1.plus(amount1)
-
   // update token0 data
   token0.volume = token0.volume.plus(amount0Abs)
   token0.totalValueLocked = token0.totalValueLocked.plus(amount0)
@@ -243,6 +239,10 @@ export function handleSwapEvent(event: SwapEvent): void {
   weightBalanceData.balance0 = poolBalances.value0.toBigDecimal()
   weightBalanceData.balance1 = poolBalances.value1.toBigDecimal()
 
+  // Update the pool.
+  pool.totalValueLockedToken0 = convertTokenToDecimal(poolBalances.value0)
+  pool.totalValueLockedToken1 = convertTokenToDecimal(poolBalances.value1)
+
   weightBalanceData.save()
 
   token0DayData.save()
@@ -337,7 +337,7 @@ export function handleJoinExitPool(event: JoinExitPoolEvent): void {
 
   // update token1 data
   token1.txCount = token1.txCount.plus(ONE_BI)
-  if (joinExitPoolData.isJoin === true) {
+  if (joinExitPoolData.isJoin == true) {
     token1.totalValueLocked = token1.totalValueLocked.plus(amount1).minus(convertTokenToDecimal(joinExitPoolData.feeAmount1))
   } else {
     token1.totalValueLocked = token1.totalValueLocked.minus(amount1).minus(convertTokenToDecimal(joinExitPoolData.feeAmount1))
@@ -347,12 +347,12 @@ export function handleJoinExitPool(event: JoinExitPoolEvent): void {
   // pool data
   pool.txCount = pool.txCount.plus(ONE_BI)
 
-  if (joinExitPoolData.isJoin === true) {
+  if (joinExitPoolData.isJoin == true) {
     pool.totalValueLockedToken0 = pool.totalValueLockedToken0.plus(amount0).minus(convertTokenToDecimal(joinExitPoolData.feeAmount0))
   } else {
     pool.totalValueLockedToken0 = pool.totalValueLockedToken0.minus(amount0).minus(convertTokenToDecimal(joinExitPoolData.feeAmount0))
   }
-  if (joinExitPoolData.isJoin === true) {
+  if (joinExitPoolData.isJoin == true) {
     pool.totalValueLockedToken1 = pool.totalValueLockedToken1.plus(amount1).minus(convertTokenToDecimal(joinExitPoolData.feeAmount1))
   } else {
     pool.totalValueLockedToken1 = pool.totalValueLockedToken1.minus(amount1).minus(convertTokenToDecimal(joinExitPoolData.feeAmount1))
