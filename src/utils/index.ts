@@ -114,10 +114,10 @@ export function loadWeightBalanceData(id: string, pool: Pool, event: ethereum.Ev
     weightBalanceData.token1 = pool.token1
     weightBalanceData.transaction = event.transaction.hash
     weightBalanceData.timestamp = event.block.timestamp
-    weightBalanceData.weight0 = ZERO_BD
-    weightBalanceData.weight1 = ZERO_BD
-    weightBalanceData.balance0 = ZERO_BD
-    weightBalanceData.balance1 = ZERO_BD
+    weightBalanceData.weight0 = pool.weight0
+    weightBalanceData.weight1 = pool.weight1
+    weightBalanceData.balance0 = pool.totalValueLockedToken0
+    weightBalanceData.balance1 = pool.totalValueLockedToken1
     weightBalanceData.save()
   }
   return weightBalanceData

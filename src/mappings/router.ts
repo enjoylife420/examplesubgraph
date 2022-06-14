@@ -55,6 +55,10 @@ export function handleSwapEvent(event: SwapEvent): void {
   pool.weight0 = weights[0].toBigDecimal()
   pool.weight1 = weights[1].toBigDecimal()
 
+  let weightBalanceData = loadWeightBalanceData(pool.id + "-" + event.block.timestamp.toString(), pool, event as ethereum.Event)
+  weightBalanceData.weight0 = weights[0].toBigDecimal().div(weights[0].toBigDecimal().plus(weights[1].toBigDecimal()))
+  weightBalanceData.weight1 = weights[1].toBigDecimal().div(weights[0].toBigDecimal().plus(weights[1].toBigDecimal()))
+
   let token0 = Token.load(pool.token0)
   let token1 = Token.load(pool.token1)
 
@@ -63,9 +67,21 @@ export function handleSwapEvent(event: SwapEvent): void {
     return
   }
 
+  let poolBalances = poolContract.getPoolBalancesAndChangeBlock()
+  weightBalanceData.balance0 = poolBalances.value0.toBigDecimal()
+  weightBalanceData.balance1 = poolBalances.value1.toBigDecimal()
+
+  weightBalanceData.save()
+
   // amounts - 0/1 are token deltas: can be positive or negative
-  let amount0 = token0.id == event.params.tokenIn.toHexString() ? convertTokenToDecimal(event.params.amountIn) : convertTokenToDecimal(event.params.amountOut.plus(event.params.protocolSwapFeeAmount)).times(BigDecimal.fromString('-1'))
-  let amount1 = token1.id == event.params.tokenIn.toHexString() ? convertTokenToDecimal(event.params.amountIn) : convertTokenToDecimal(event.params.amountOut.plus(event.params.protocolSwapFeeAmount)).times(BigDecimal.fromString('-1'))
+  // let amount0 = token0.id == event.params.tokenIn.toHexString() ? convertTokenToDecimal(event.params.amountIn) : convertTokenToDecimal(event.params.amountOut.plus(event.params.protocolSwapFeeAmount)).times(BigDecimal.fromString('-1'))
+  // let amount1 = token1.id == event.params.tokenIn.toHexString() ? convertTokenToDecimal(event.params.amountIn) : convertTokenToDecimal(event.params.amountOut.plus(event.params.protocolSwapFeeAmount)).times(BigDecimal.fromString('-1'))
+  let amount0 = convertTokenToDecimal(poolBalances.value0).minus(pool.totalValueLockedToken0)
+  let amount1 = convertTokenToDecimal(poolBalances.value1).minus(pool.totalValueLockedToken1)
+
+  // Update the pool.
+  pool.totalValueLockedToken0 = convertTokenToDecimal(poolBalances.value0)
+  pool.totalValueLockedToken1 = convertTokenToDecimal(poolBalances.value1)
 
   // need absolute amounts for volume
   let amount0Abs = amount0
@@ -143,6 +159,9 @@ export function handleSwapEvent(event: SwapEvent): void {
   // let ratio = getTokenRatio(Address.fromString(pool.id), token0 as Token, token1 as Token)
   // pool.ratio = ratio
 
+  pool.token0Price = getToken0Price(Address.fromString(pool.id), token0 as Token, token1 as Token)
+  pool.token1Price = ONE_BD.div(pool.token0Price)
+
   pool.save()
 
   // update token prices
@@ -151,9 +170,6 @@ export function handleSwapEvent(event: SwapEvent): void {
 
   token0.save()
   token1.save()
-
-  pool.token0Price = getToken0Price(Address.fromString(pool.id), token0 as Token, token1 as Token)
-  pool.token1Price = ONE_BD.div(pool.token0Price)
 
   /**
    * Things afffected by new USD rates
@@ -232,19 +248,6 @@ export function handleSwapEvent(event: SwapEvent): void {
   token1HourData.untrackedVolumeUSD = token1HourData.untrackedVolumeUSD.plus(amountTotalUSDTracked)
   token1HourData.feesUSD = token1HourData.feesUSD.plus(feesUSD)
 
-  let weightBalanceData = loadWeightBalanceData(pool.id + "-" + event.block.timestamp.toString(), pool, event as ethereum.Event)
-  weightBalanceData.weight0 = weights[0].toBigDecimal().div(weights[0].toBigDecimal().plus(weights[1].toBigDecimal()))
-  weightBalanceData.weight1 = weights[1].toBigDecimal().div(weights[0].toBigDecimal().plus(weights[1].toBigDecimal()))
-  let poolBalances = poolContract.getPoolBalancesAndChangeBlock()
-  weightBalanceData.balance0 = poolBalances.value0.toBigDecimal()
-  weightBalanceData.balance1 = poolBalances.value1.toBigDecimal()
-
-  // Update the pool.
-  pool.totalValueLockedToken0 = convertTokenToDecimal(poolBalances.value0)
-  pool.totalValueLockedToken1 = convertTokenToDecimal(poolBalances.value1)
-
-  weightBalanceData.save()
-
   token0DayData.save()
   token1DayData.save()
   gamutDayData.save()
@@ -298,6 +301,16 @@ export function handleJoinExitPool(event: JoinExitPoolEvent): void {
   let weights = poolContract.getWeights()
   pool.weight0 = weights[0].toBigDecimal()
   pool.weight1 = weights[1].toBigDecimal()
+
+  let weightBalanceData = loadWeightBalanceData(pool.id + "-" + event.block.timestamp.toString(), pool, event as ethereum.Event)
+  weightBalanceData.weight0 = weights[0].toBigDecimal().div(weights[0].toBigDecimal().plus(weights[1].toBigDecimal()))
+  weightBalanceData.weight1 = weights[1].toBigDecimal().div(weights[0].toBigDecimal().plus(weights[1].toBigDecimal()))
+  let poolBalances = poolContract.getPoolBalancesAndChangeBlock()
+  weightBalanceData.balance0 = poolBalances.value0.toBigDecimal()
+  weightBalanceData.balance1 = poolBalances.value1.toBigDecimal()
+
+  weightBalanceData.save()
+
   pool.feeTier = poolContract.getSwapFeePercentage()
   pool.observationIndex = pool.observationIndex.plus(ONE_BI)
   pool.collectedFeesToken0 = pool.collectedFeesToken0.plus(convertTokenToDecimal(protocolFeeAmounts[0]))
@@ -347,16 +360,9 @@ export function handleJoinExitPool(event: JoinExitPoolEvent): void {
   // pool data
   pool.txCount = pool.txCount.plus(ONE_BI)
 
-  if (joinExitPoolData.isJoin == true) {
-    pool.totalValueLockedToken0 = pool.totalValueLockedToken0.plus(amount0).minus(convertTokenToDecimal(joinExitPoolData.feeAmount0))
-  } else {
-    pool.totalValueLockedToken0 = pool.totalValueLockedToken0.minus(amount0).minus(convertTokenToDecimal(joinExitPoolData.feeAmount0))
-  }
-  if (joinExitPoolData.isJoin == true) {
-    pool.totalValueLockedToken1 = pool.totalValueLockedToken1.plus(amount1).minus(convertTokenToDecimal(joinExitPoolData.feeAmount1))
-  } else {
-    pool.totalValueLockedToken1 = pool.totalValueLockedToken1.minus(amount1).minus(convertTokenToDecimal(joinExitPoolData.feeAmount1))
-  }
+  // Update the pool.
+  pool.totalValueLockedToken0 = convertTokenToDecimal(poolBalances.value0)
+  pool.totalValueLockedToken1 = convertTokenToDecimal(poolBalances.value1)
 
   pool.liquidity = poolContract.totalSupply()
 
@@ -423,15 +429,6 @@ export function handleJoinExitPool(event: JoinExitPoolEvent): void {
   }
   transaction.save()
   pool.save()
-
-  let weightBalanceData = loadWeightBalanceData(pool.id + "-" + event.block.timestamp.toString(), pool, event as ethereum.Event)
-  weightBalanceData.weight0 = weights[0].toBigDecimal().div(weights[0].toBigDecimal().plus(weights[1].toBigDecimal()))
-  weightBalanceData.weight1 = weights[1].toBigDecimal().div(weights[0].toBigDecimal().plus(weights[1].toBigDecimal()))
-  let poolBalances = poolContract.getPoolBalancesAndChangeBlock()
-  weightBalanceData.balance0 = poolBalances.value0.toBigDecimal()
-  weightBalanceData.balance1 = poolBalances.value1.toBigDecimal()
-
-  weightBalanceData.save()
 
   updateGamutDayDataFromEvent(event.transaction, event.block)
   updatePoolDayDataFromEvent(poolAddress, event.transaction, event.block)
