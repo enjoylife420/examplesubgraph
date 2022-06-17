@@ -445,7 +445,7 @@ type WeightBalanceData @entity {
   balance1: BigDecimal!
 }
 
-type PoolTokenPrices @entity {
+type PoolTokensPrice @entity {
   id: ID!
   blockNumber: BigInt!
   timestamp: BigInt!

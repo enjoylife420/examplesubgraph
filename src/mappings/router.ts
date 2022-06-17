@@ -1,6 +1,6 @@
 import { Address, BigDecimal, ethereum } from '@graphprotocol/graph-ts'
 import { FACTORY_ADDRESS, ZERO_BI, ZERO_BD, ONE_BI, ADDRESS_ZERO, ONE_BD } from './../utils/constants'
-import { Bundle, SwapData, JoinExitPoolData, Factory, Pool, Token, Swap, Join, Exit, PoolTokenPrices } from '../../generated/schema'
+import { Bundle, SwapData, JoinExitPoolData, Factory, Pool, Token, Swap, Join, Exit, PoolTokensPrice } from '../../generated/schema'
 import { Factory as FactoryABI } from '../../generated/Factory/Factory'
 import { Swap as SwapEvent, PoolBalanceChanged as JoinExitPoolEvent } from '../../generated/Router/Router'
 import { Pool as PoolABI } from '../../generated/Factory/Pool'
@@ -248,18 +248,18 @@ export function handleSwapEvent(event: SwapEvent): void {
   token1HourData.untrackedVolumeUSD = token1HourData.untrackedVolumeUSD.plus(amountTotalUSDTracked)
   token1HourData.feesUSD = token1HourData.feesUSD.plus(feesUSD)
 
-  let poolTokenPrices = PoolTokenPrices.load(pool.id + "-" + event.block.number.toString())
-  if (poolTokenPrices === null) {
-    poolTokenPrices = new PoolTokenPrices(pool.id + "-" + event.block.number.toString())
-    poolTokenPrices.blockNumber = event.block.number
-    poolTokenPrices.timestamp = event.block.timestamp
+  let poolTokensPrice = PoolTokensPrice.load(pool.id.toString() + "-" + event.block.number.toString())
+  if (poolTokensPrice === null) {
+    poolTokensPrice = new PoolTokensPrice(pool.id.toString() + "-" + event.block.number.toString())
+    poolTokensPrice.blockNumber = event.block.number
+    poolTokensPrice.timestamp = event.block.timestamp
   }
-  poolTokenPrices.token0 = pool.token0
-  poolTokenPrices.token1 = pool.token1
-  poolTokenPrices.token0Price = pool.token0Price
-  poolTokenPrices.token1Price = pool.token1Price
-  poolTokenPrices.pool = pool.id
-  poolTokenPrices.save()
+  poolTokensPrice.token0 = pool.token0
+  poolTokensPrice.token1 = pool.token1
+  poolTokensPrice.token0Price = pool.token0Price
+  poolTokensPrice.token1Price = pool.token1Price
+  poolTokensPrice.pool = pool.id
+  poolTokensPrice.save()
 
   token0DayData.save()
   token1DayData.save()
@@ -443,18 +443,18 @@ export function handleJoinExitPool(event: JoinExitPoolEvent): void {
   transaction.save()
   pool.save()
 
-  let poolTokenPrices = PoolTokenPrices.load(pool.id + "-" + event.block.number.toString())
-  if (poolTokenPrices === null) {
-    poolTokenPrices = new PoolTokenPrices(pool.id + "-" + event.block.number.toString())
-    poolTokenPrices.blockNumber = event.block.number
-    poolTokenPrices.timestamp = event.block.timestamp
+  let poolTokensPrice = PoolTokensPrice.load(pool.id.toString() + "-" + event.block.number.toString())
+  if (poolTokensPrice === null) {
+    poolTokensPrice = new PoolTokensPrice(pool.id.toString() + "-" + event.block.number.toString())
+    poolTokensPrice.blockNumber = event.block.number
+    poolTokensPrice.timestamp = event.block.timestamp
   }
-  poolTokenPrices.token0 = pool.token0
-  poolTokenPrices.token1 = pool.token1
-  poolTokenPrices.token0Price = pool.token0Price
-  poolTokenPrices.token1Price = pool.token1Price
-  poolTokenPrices.pool = pool.id
-  poolTokenPrices.save()
+  poolTokensPrice.token0 = pool.token0
+  poolTokensPrice.token1 = pool.token1
+  poolTokensPrice.token0Price = pool.token0Price
+  poolTokensPrice.token1Price = pool.token1Price
+  poolTokensPrice.pool = pool.id
+  poolTokensPrice.save()
 
   updateGamutDayDataFromEvent(event.transaction, event.block)
   updatePoolDayDataFromEvent(poolAddress, event.transaction, event.block)
